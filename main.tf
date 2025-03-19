@@ -86,12 +86,11 @@ resource "aws_cloudfront_distribution" "frontend_distribution" {
     minimum_protocol_version = "TLSv1.2_2021"
   }
 
-  aliases = [var.subdomain + var.subdomain == "" ? "" : "." + var.domain_name]
+  aliases = [var.subdomain != "" ? "${var.subdomain}.${var.domain_name}" : var.domain_name]
 }
 
-# Certificado SSL (ACM) para o domínio personalizado
 resource "aws_acm_certificate" "certificate" {
-  domain_name       = var.subdomain + var.subdomain == "" ? "" : "." + var.domain_name
+  domain_name       = var.subdomain != "" ? "${var.subdomain}.${var.domain_name}" : var.domain_name
   validation_method = "DNS"
 
   lifecycle {
@@ -117,7 +116,7 @@ resource "aws_route53_record" "frontend_dns_validation" {
 
 resource "aws_route53_record" "frontend_alias" {
   zone_id = data.aws_route53_zone.main.zone_id
-  name    = var.subdomain + var.subdomain == "" ? "" : "." + var.domain_name
+  name    = var.subdomain != "" ? "${var.subdomain}.${var.domain_name}" : var.domain_name
   type    = "A"
 
   alias {
