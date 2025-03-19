@@ -1,16 +1,3 @@
-terraform {
-  backend "s3" {
-    bucket  = var.s3_backend
-    key     = var.key
-    region  = var.region
-    encrypt = true
-  }
-}
-
-provider "aws" {
-  region = var.region
-}
-
 resource "aws_s3_bucket" "meu_bucket" {
   bucket        = var.s3_front
   force_destroy = true
