@@ -24,6 +24,36 @@ resource "aws_s3_bucket_public_access_block" "meu_bucket_public_access_block" {
   restrict_public_buckets = true
 }
 
+resource "aws_s3_bucket_policy" "allow_cloudfront_access" {
+  bucket = aws_s3_bucket.meu_bucket.id
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Sid: "AllowCloudFrontServicePrincipalReadOnly",
+        Effect: "Allow",
+        Principal: {
+          Service: "cloudfront.amazonaws.com"
+        },
+        Action: [
+          "s3:GetObject",
+          "s3:ListBucket"
+        ],
+        Resource: [
+          "${aws_s3_bucket.meu_bucket.arn}",
+          "${aws_s3_bucket.meu_bucket.arn}/*"
+        ],
+        Condition: {
+          StringEquals: {
+            "AWS:SourceArn": aws_cloudfront_distribution.frontend_distribution.arn
+          }
+        }
+      }
+    ]
+  })
+}
+
 resource "aws_cloudfront_origin_access_control" "oac" {
   name                              = "${var.s3_front}-oac"
   description                       = "OAC for ${var.s3_front} S3 bucket"
