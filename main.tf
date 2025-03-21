@@ -19,7 +19,7 @@ resource "aws_s3_bucket_public_access_block" "meu_bucket_public_access_block" {
   bucket = aws_s3_bucket.meu_bucket.id
 
   block_public_acls       = true
-  block_public_policy     = ture
+  block_public_policy     = true
   ignore_public_acls      = true
   restrict_public_buckets = true
 }
@@ -91,6 +91,23 @@ resource "aws_cloudfront_cache_policy" "optimized_cache" {
     query_strings_config {
       query_string_behavior = "none"  # Nenhuma query string será armazenada no cache
     }
+  }
+}
+
+resource "aws_cloudfront_origin_request_policy" "optimized_request" {
+  name    = "optimized-request-policy"
+  comment = "Política de requisição otimizada para S3"
+
+  cookies_config {
+    cookie_behavior = "none"
+  }
+
+  headers_config {
+    header_behavior = "none"
+  }
+
+  query_strings_config {
+    query_string_behavior = "none"
   }
 }
 
