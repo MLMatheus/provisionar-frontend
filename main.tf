@@ -18,27 +18,10 @@ resource "aws_s3_bucket_website_configuration" "meu_bucket_website" {
 resource "aws_s3_bucket_public_access_block" "meu_bucket_public_access_block" {
   bucket = aws_s3_bucket.meu_bucket.id
 
-  block_public_acls       = false
-  block_public_policy     = false
-  ignore_public_acls      = false
-  restrict_public_buckets = false
-}
-
-resource "aws_s3_bucket_policy" "public_access_policy" {
-  bucket = aws_s3_bucket.meu_bucket.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid       = "PublicReadGetObject"
-        Effect    = "Allow"
-        Principal = "*"
-        Action    = "s3:GetObject"
-        Resource  = "${aws_s3_bucket.meu_bucket.arn}/*"
-      }
-    ]
-  })
+  block_public_acls       = true
+  block_public_policy     = ture
+  ignore_public_acls      = true
+  restrict_public_buckets = true
 }
 
 resource "aws_cloudfront_origin_access_control" "oac" {
@@ -65,18 +48,15 @@ resource "aws_cloudfront_distribution" "frontend_distribution" {
     viewer_protocol_policy = "redirect-to-https"
     allowed_methods        = ["GET", "HEAD"]
     cached_methods         = ["GET", "HEAD"]
-
-    forwarded_values {
-      query_string = false
-      cookies {
-        forward = "none"
-      }
-    }
+    
+    cache_policy_id          = aws_cloudfront_cache_policy.optimized_cache.id
+    origin_request_policy_id = aws_cloudfront_origin_request_policy.optimized_request.id
   }
 
   restrictions {
     geo_restriction {
-      restriction_type = "none"
+      restriction_type = "whitelist"
+      locations        = ["BR"]
     }
   }
 
@@ -87,6 +67,31 @@ resource "aws_cloudfront_distribution" "frontend_distribution" {
   }
 
   aliases = [var.subdomain != "" ? "${var.subdomain}.${var.domain_name}" : var.domain_name]
+}
+
+resource "aws_cloudfront_cache_policy" "optimized_cache" {
+  name        = "optimized-cache-policy"
+  comment     = "Política de cache otimizada para S3"
+  default_ttl = 86400   # Cache de 24 horas
+  max_ttl     = 604800  # Cache máximo de 7 dias
+  min_ttl     = 3600    # Cache mínimo de 1 hora
+
+  parameters_in_cache_key_and_forwarded_to_origin {
+    enable_accept_encoding_gzip   = true
+    enable_accept_encoding_brotli = true
+
+    cookies_config {
+      cookie_behavior = "none"  # Nenhum cookie será armazenado no cache
+    }
+
+    headers_config {
+      header_behavior = "none"  # Nenhum cabeçalho será enviado à origem
+    }
+
+    query_strings_config {
+      query_string_behavior = "none"  # Nenhuma query string será armazenada no cache
+    }
+  }
 }
 
 resource "aws_acm_certificate" "certificate" {
